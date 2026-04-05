@@ -1,0 +1,41 @@
+import { SignJWT, jwtVerify, JWTPayload } from "jose";
+
+const JWT_SECRET_KEY = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is not set");
+  }
+  return new TextEncoder().encode(secret);
+};
+
+export interface TokenPayload extends JWTPayload {
+  sub: string;
+  role: "student" | "teacher";
+  email: string;
+}
+
+export async function signToken(payload: {
+  sub: string;
+  role: "student" | "teacher";
+  email: string;
+}): Promise<string> {
+  const expiresIn = payload.role === "student" ? "7d" : "24h";
+
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .setIssuer("tricognia-ville")
+    .sign(JWT_SECRET_KEY());
+}
+
+export async function verifyToken(token: string): Promise<TokenPayload> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET_KEY(), {
+      issuer: "tricognia-ville",
+    });
+    return payload as TokenPayload;
+  } catch {
+    throw new Error("Invalid or expired token");
+  }
+}
