@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { students } from "@/lib/db/schema";
 import { signToken } from "@/lib/auth/jwt";
 import { registerSchema, formatZodError } from "@/lib/api/validators";
-import { conflict, internalError, badRequest } from "@/lib/api/errors";
+import { conflict, internalError } from "@/lib/api/errors";
 import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {

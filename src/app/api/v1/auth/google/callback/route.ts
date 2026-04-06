@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { students, oauthPendingCodes } from "@/lib/db/schema";
 import { signToken } from "@/lib/auth/jwt";
-import { internalError } from "@/lib/api/errors";
 import { eq } from "drizzle-orm";
 
 interface GoogleTokenResponse {

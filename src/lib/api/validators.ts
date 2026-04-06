@@ -89,7 +89,7 @@ export function formatZodError(error: z.ZodError) {
     error: "Validation failed",
     code: "VALIDATION_ERROR",
     status: 400,
-    details: error.errors.map((e) => ({
+    details: error.issues.map((e) => ({
       field: e.path.join("."),
       message: e.message,
     })),
