@@ -22,17 +22,32 @@ interface AnalyticsData {
 export default function DashboardOverview() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/analytics")
-      .then((res) => res.json())
-      .then(setData)
-      .catch(console.error)
+      .then((res) => {
+        if (!res.ok) throw new Error(res.status === 401 ? "Not authenticated" : `API error ${res.status}`);
+        return res.json();
+      })
+      .then((json) =>
+        setData({
+          ...json,
+          readingLevelDistribution: json.readingLevelDistribution ?? [],
+          streakLeaderboard: json.streakLeaderboard ?? [],
+          recentActivity: json.recentActivity ?? [],
+        })
+      )
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return <div className="text-muted-foreground">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return <div className="text-destructive">Error: {error}</div>;
   }
 
   if (!data) {

@@ -4,7 +4,7 @@ import { students, oauthPendingCodes } from "@/lib/db/schema";
 import { signToken } from "@/lib/auth/jwt";
 import { googleAuthSchema, formatZodError } from "@/lib/api/validators";
 import { unauthorized, internalError } from "@/lib/api/errors";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 interface GoogleTokenPayload {
@@ -146,6 +146,15 @@ export async function GET() {
     // Create a pending session for Godot to poll
     const sessionId = randomUUID();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Self-healing cleanup — prune stale pending codes so the table doesn't grow
+    // unbounded. Runs on every new pending-code INSERT, piggybacking on an
+    // already-hot code path. No cron needed.
+    await db.delete(oauthPendingCodes).where(
+      sql`${oauthPendingCodes.expiresAt} < NOW()
+          OR (${oauthPendingCodes.status} IN ('completed','expired')
+              AND ${oauthPendingCodes.createdAt} < NOW() - INTERVAL '1 hour')`
+    );
 
     await db.insert(oauthPendingCodes).values({
       sessionId,

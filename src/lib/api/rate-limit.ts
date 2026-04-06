@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { failedLoginAttempts } from "@/lib/db/schema";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, lt } from "drizzle-orm";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_WINDOW_MINUTES = 15;
@@ -38,4 +38,11 @@ export async function recordFailedAttempt(
     email,
     ipAddress,
   });
+
+  // Self-healing prune: drop rows older than 7 days so the table doesn't grow
+  // unbounded. Piggybacks on the already-hot insert path so no cron is needed.
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  await db
+    .delete(failedLoginAttempts)
+    .where(lt(failedLoginAttempts.attemptedAt, weekAgo));
 }

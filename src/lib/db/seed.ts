@@ -1,7 +1,8 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { hash } from "bcryptjs";
-import { teachers } from "./schema";
+import { teachers, badges } from "./schema";
+import { BADGE_DEFINITIONS } from "./badge-definitions";
 import { eq } from "drizzle-orm";
 
 async function seed() {
@@ -28,20 +29,30 @@ async function seed() {
 
     if (existing.length > 0) {
       console.log(`Teacher account already exists: ${email}`);
-      return;
+    } else {
+
+      const passwordHash = await hash(password, 12);
+
+      await db.insert(teachers).values({
+        email,
+        passwordHash,
+        name,
+      });
+      console.log(`Seeded teacher account: ${email}`);
     }
-
-    const passwordHash = await hash(password, 12);
-
-    await db.insert(teachers).values({
-      email,
-      passwordHash,
-      name,
-    });
-
-    console.log(`Seeded teacher account: ${email}`);
   } catch (error) {
     console.error("Failed to seed teacher account:", error);
+    process.exit(1);
+  }
+
+  // Seed badge definitions (idempotent)
+  try {
+    for (const badge of BADGE_DEFINITIONS) {
+      await db.insert(badges).values(badge).onConflictDoNothing();
+    }
+    console.log(`Seeded ${BADGE_DEFINITIONS.length} badge definitions`);
+  } catch (error) {
+    console.error("Failed to seed badge definitions:", error);
     process.exit(1);
   }
 }

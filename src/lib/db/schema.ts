@@ -6,6 +6,7 @@ import {
   timestamp,
   uuid,
   serial,
+  real,
   primaryKey,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -79,6 +80,8 @@ export const questAttempts = pgTable("quest_attempts", {
   questId: text("quest_id").notNull(),
   buildingId: text("building_id").notNull(),
   passed: boolean("passed").notNull(),
+  score: integer("score"),
+  totalItems: integer("total_items"),
   attempts: integer("attempts").default(1).notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -97,6 +100,51 @@ export const buildingStates = pgTable(
     syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [primaryKey({ columns: [table.studentId, table.buildingId] })]
+);
+
+// ── Story Progress ──
+export const storyProgress = pgTable(
+  "story_progress",
+  {
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    buildingId: text("building_id").notNull(),
+    prologueSeen: boolean("prologue_seen").notNull().default(false),
+    introSeen: boolean("intro_seen").notNull().default(false),
+    outroSeen: boolean("outro_seen").notNull().default(false),
+    endingSeen: boolean("ending_seen").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.studentId, table.buildingId] })]
+);
+
+// ── Badges (definitions, seeded once) ──
+export const badges = pgTable("badges", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(), // "building"|"streak"|"xp"|"quest"|"level"
+  icon: text("icon").notNull(),
+  requirement: text("requirement").notNull(),
+  requirementValue: integer("requirement_value"),
+  requirementKey: text("requirement_key"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ── Student Badges (earned records) ──
+export const studentBadges = pgTable(
+  "student_badges",
+  {
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    badgeId: text("badge_id")
+      .notNull()
+      .references(() => badges.id, { onDelete: "cascade" }),
+    earnedAt: timestamp("earned_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.studentId, table.badgeId] })]
 );
 
 // ── Google OAuth Pending Codes (for Godot polling flow) ──
@@ -118,15 +166,43 @@ export const failedLoginAttempts = pgTable("failed_login_attempts", {
   attemptedAt: timestamp("attempted_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ── Speech Assessments ──
+export const speechAssessments = pgTable("speech_assessments", {
+  id: serial("id").primaryKey(),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => students.id, { onDelete: "cascade" }),
+  questId: text("quest_id").notNull(),
+  buildingId: text("building_id").notNull(),
+  stage: text("stage").notNull(), // tutorial | practice | mission
+  expectedText: text("expected_text").notNull(),
+  transcript: text("transcript"), // null if speech API unavailable
+  confidence: real("confidence"), // Web Speech API confidence 0–1
+  score: integer("score"), // 0–100
+  feedback: text("feedback"),
+  errorTypes: text("error_types"), // JSON array string e.g. '["omission","phonetic"]'
+  audioUrl: text("audio_url"),
+  flagReview: boolean("flag_review").default(false).notNull(),
+  attemptNumber: integer("attempt_number").default(1).notNull(),
+  teacherNote: text("teacher_note"),
+  reviewedBy: uuid("reviewed_by").references(() => teachers.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ── Relations ──
 export const teachersRelations = relations(teachers, ({ many }) => ({
   classes: many(classes),
+  reviewedAssessments: many(speechAssessments),
 }));
 
 export const studentsRelations = relations(students, ({ many }) => ({
   classStudents: many(classStudents),
   questAttempts: many(questAttempts),
   buildingStates: many(buildingStates),
+  storyProgress: many(storyProgress),
+  speechAssessments: many(speechAssessments),
+  studentBadges: many(studentBadges),
 }));
 
 export const classesRelations = relations(classes, ({ one, many }) => ({
@@ -159,5 +235,38 @@ export const buildingStatesRelations = relations(buildingStates, ({ one }) => ({
   student: one(students, {
     fields: [buildingStates.studentId],
     references: [students.id],
+  }),
+}));
+
+export const badgesRelations = relations(badges, ({ many }) => ({
+  studentBadges: many(studentBadges),
+}));
+
+export const studentBadgesRelations = relations(studentBadges, ({ one }) => ({
+  student: one(students, {
+    fields: [studentBadges.studentId],
+    references: [students.id],
+  }),
+  badge: one(badges, {
+    fields: [studentBadges.badgeId],
+    references: [badges.id],
+  }),
+}));
+
+export const storyProgressRelations = relations(storyProgress, ({ one }) => ({
+  student: one(students, {
+    fields: [storyProgress.studentId],
+    references: [students.id],
+  }),
+}));
+
+export const speechAssessmentsRelations = relations(speechAssessments, ({ one }) => ({
+  student: one(students, {
+    fields: [speechAssessments.studentId],
+    references: [students.id],
+  }),
+  reviewer: one(teachers, {
+    fields: [speechAssessments.reviewedBy],
+    references: [teachers.id],
   }),
 }));

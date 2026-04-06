@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export default function TeacherSignIn() {
+export default function TeacherSignInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-muted/30 p-4" />}>
+      <TeacherSignIn />
+    </Suspense>
+  );
+}
+
+function TeacherSignIn() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,8 +41,7 @@ export default function TeacherSignIn() {
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      router.push(searchParams.get("redirect") || "/dashboard");
     } catch {
       setError("Network error. Please try again.");
     } finally {

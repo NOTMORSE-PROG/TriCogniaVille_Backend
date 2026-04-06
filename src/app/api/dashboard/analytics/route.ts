@@ -1,124 +1,105 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import {
-  classes,
-  classStudents,
-  students,
-  questAttempts,
-} from "@/lib/db/schema";
+import { students, questAttempts } from "@/lib/db/schema";
 import { withTeacherAuth } from "@/lib/auth/middleware";
+import { visibleStudentIds } from "@/lib/auth/teacher-access";
 import { internalError } from "@/lib/api/errors";
-import { eq, sql, desc, and, gte } from "drizzle-orm";
+import { sql, desc, inArray, gte, and } from "drizzle-orm";
 import { TokenPayload } from "@/lib/auth/jwt";
 
 export async function GET(request: NextRequest) {
   return withTeacherAuth(request, async (_req: NextRequest, teacher: TokenPayload) => {
     try {
-      // Get all classes for this teacher
-      const teacherClasses = await db
-        .select({ id: classes.id })
-        .from(classes)
-        .where(eq(classes.teacherId, teacher.sub));
+      const visible = visibleStudentIds(teacher.sub);
 
-      const classIds = teacherClasses.map((c) => c.id);
-
-      if (classIds.length === 0) {
-        return NextResponse.json({
-          totalStudents: 0,
-          activeToday: 0,
-          readingLevelDistribution: [],
-          questPassRate: [],
-          streakLeaderboard: [],
-          recentActivity: [],
-        });
-      }
-
-      // Get all student IDs in teacher's classes
-      const enrollments = await db
-        .select({ studentId: classStudents.studentId })
-        .from(classStudents)
-        .where(sql`${classStudents.classId} = ANY(ARRAY[${sql.join(classIds.map(id => sql`${id}::uuid`), sql`, `)}])`);
-
-      const studentIds = [...new Set(enrollments.map((e) => e.studentId))];
-
-      if (studentIds.length === 0) {
-        return NextResponse.json({
-          totalStudents: 0,
-          activeToday: 0,
-          readingLevelDistribution: [],
-          questPassRate: [],
-          streakLeaderboard: [],
-          recentActivity: [],
-        });
-      }
-
-      const studentIdFilter = sql`${students.id} = ANY(ARRAY[${sql.join(studentIds.map(id => sql`${id}::uuid`), sql`, `)}])`;
-
-      // Reading level distribution
-      const readingLevelDist = await db
-        .select({
-          level: students.readingLevel,
-          count: sql<number>`cast(count(*) as int)`,
-        })
+      const totalStudents = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
         .from(students)
-        .where(studentIdFilter)
-        .groupBy(students.readingLevel)
-        .orderBy(students.readingLevel);
+        .where(inArray(students.id, visible))
+        .then((r) => r[0]?.count ?? 0);
 
-      // Active today
+      if (totalStudents === 0) {
+        return NextResponse.json({
+          totalStudents: 0,
+          activeToday: 0,
+          readingLevelDistribution: [],
+          questPassRate: [],
+          streakLeaderboard: [],
+          recentActivity: [],
+        });
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const [activeResult] = await db
-        .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(students)
-        .where(
-          and(studentIdFilter, gte(students.lastActive, today))
-        );
+      const [
+        readingLevelDist,
+        activeResult,
+        questPassRate,
+        streakLeaderboard,
+        recentActivity,
+      ] = await Promise.all([
+        db
+          .select({
+            level: students.readingLevel,
+            count: sql<number>`cast(count(*) as int)`,
+          })
+          .from(students)
+          .where(inArray(students.id, visibleStudentIds(teacher.sub)))
+          .groupBy(students.readingLevel)
+          .orderBy(students.readingLevel),
 
-      // Quest pass rate by building
-      const questPassRate = await db
-        .select({
-          buildingId: questAttempts.buildingId,
-          total: sql<number>`cast(count(*) as int)`,
-          passed: sql<number>`cast(sum(case when ${questAttempts.passed} then 1 else 0 end) as int)`,
-        })
-        .from(questAttempts)
-        .where(sql`${questAttempts.studentId} = ANY(ARRAY[${sql.join(studentIds.map(id => sql`${id}::uuid`), sql`, `)}])`)
-        .groupBy(questAttempts.buildingId);
+        db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(students)
+          .where(
+            and(
+              inArray(students.id, visibleStudentIds(teacher.sub)),
+              gte(students.lastActive, today)
+            )
+          )
+          .then((r) => r[0]),
 
-      // Streak leaderboard (top 10)
-      const streakLeaderboard = await db
-        .select({
-          id: students.id,
-          name: students.name,
-          streakDays: students.streakDays,
-          xp: students.xp,
-        })
-        .from(students)
-        .where(studentIdFilter)
-        .orderBy(desc(students.streakDays))
-        .limit(10);
+        db
+          .select({
+            buildingId: questAttempts.buildingId,
+            total: sql<number>`cast(count(*) as int)`,
+            passed: sql<number>`cast(sum(case when ${questAttempts.passed} then 1 else 0 end) as int)`,
+          })
+          .from(questAttempts)
+          .where(inArray(questAttempts.studentId, visibleStudentIds(teacher.sub)))
+          .groupBy(questAttempts.buildingId),
 
-      // Recent activity (last 20 quest attempts)
-      const recentActivity = await db
-        .select({
-          questId: questAttempts.questId,
-          buildingId: questAttempts.buildingId,
-          passed: questAttempts.passed,
-          attempts: questAttempts.attempts,
-          completedAt: questAttempts.completedAt,
-          studentName: students.name,
-        })
-        .from(questAttempts)
-        .innerJoin(students, eq(questAttempts.studentId, students.id))
-        .where(sql`${questAttempts.studentId} = ANY(ARRAY[${sql.join(studentIds.map(id => sql`${id}::uuid`), sql`, `)}])`)
-        .orderBy(desc(questAttempts.createdAt))
-        .limit(20);
+        db
+          .select({
+            id: students.id,
+            name: students.name,
+            streakDays: students.streakDays,
+            xp: students.xp,
+          })
+          .from(students)
+          .where(inArray(students.id, visibleStudentIds(teacher.sub)))
+          .orderBy(desc(students.streakDays))
+          .limit(10),
+
+        db
+          .select({
+            questId: questAttempts.questId,
+            buildingId: questAttempts.buildingId,
+            passed: questAttempts.passed,
+            completedAt: questAttempts.completedAt,
+            studentName: students.name,
+          })
+          .from(questAttempts)
+          .innerJoin(students, sql`${questAttempts.studentId} = ${students.id}`)
+          .where(inArray(questAttempts.studentId, visibleStudentIds(teacher.sub)))
+          .orderBy(desc(questAttempts.createdAt))
+          .limit(20),
+      ]);
 
       return NextResponse.json({
-        totalStudents: studentIds.length,
-        activeToday: activeResult?.count || 0,
+        totalStudents,
+        activeToday: activeResult?.count ?? 0,
         readingLevelDistribution: readingLevelDist,
         questPassRate: questPassRate.map((q) => ({
           ...q,

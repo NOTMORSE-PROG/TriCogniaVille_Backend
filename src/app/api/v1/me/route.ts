@@ -6,6 +6,7 @@ import { updateProfileSchema, formatZodError } from "@/lib/api/validators";
 import { notFound, internalError } from "@/lib/api/errors";
 import { eq } from "drizzle-orm";
 import { TokenPayload } from "@/lib/auth/jwt";
+import { checkAndAwardBadges } from "@/lib/gamification/badges";
 
 export async function GET(request: NextRequest) {
   return withStudentAuth(request, async (_req: NextRequest, user: TokenPayload) => {
@@ -72,6 +73,11 @@ export async function PATCH(request: NextRequest) {
       if (!updated) {
         return notFound("Student not found");
       }
+
+      // Fire-and-forget badge check — don't block the response
+      checkAndAwardBadges(user.sub).catch((err) =>
+        console.error("Badge check failed (me PATCH):", err)
+      );
 
       return NextResponse.json({ student: updated });
     } catch (error) {

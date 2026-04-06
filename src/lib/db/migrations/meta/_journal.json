@@ -8,6 +8,34 @@
       "when": 1775396529637,
       "tag": "0000_luxuriant_wrecker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775468752102,
+      "tag": "0001_chubby_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775470007025,
+      "tag": "0002_chunky_morlocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775470007026,
+      "tag": "0003_add_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775470007027,
+      "tag": "0004_story_progress_and_quest_scores",
+      "breakpoints": true
     }
   ]
 }

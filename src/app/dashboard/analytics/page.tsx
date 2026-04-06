@@ -32,16 +32,29 @@ interface AnalyticsData {
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/analytics")
-      .then((res) => res.json())
-      .then(setData)
-      .catch(console.error)
+      .then((res) => {
+        if (!res.ok) throw new Error(res.status === 401 ? "Not authenticated" : `API error ${res.status}`);
+        return res.json();
+      })
+      .then((json) =>
+        setData({
+          ...json,
+          readingLevelDistribution: json.readingLevelDistribution ?? [],
+          questPassRate: json.questPassRate ?? [],
+          streakLeaderboard: json.streakLeaderboard ?? [],
+          recentActivity: json.recentActivity ?? [],
+        })
+      )
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="text-muted-foreground">Loading analytics...</div>;
+  if (error) return <div className="text-destructive">Error: {error}</div>;
   if (!data) return <div className="text-destructive">Failed to load analytics.</div>;
 
   return (

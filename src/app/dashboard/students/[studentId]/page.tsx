@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { XpProgress } from "@/components/gamification/xp-progress";
+import { BadgeGrid } from "@/components/gamification/badge-grid";
 
 const BUILDINGS = [
   "town_hall",
@@ -21,6 +23,25 @@ const BUILDINGS = [
   "market",
   "bakery",
 ];
+
+interface BadgeItem {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  category: string;
+  requirement: string;
+  earned: boolean;
+  earnedAt: string | null;
+}
+
+interface LevelInfo {
+  level: number;
+  currentLevelXp: number;
+  nextLevelXp: number;
+  progressXp: number;
+  progressPct: number;
+}
 
 interface StudentData {
   student: {
@@ -47,6 +68,8 @@ interface StudentData {
     unlocked: boolean;
     unlockedAt: string | null;
   }[];
+  badges: BadgeItem[];
+  level: LevelInfo;
 }
 
 export default function StudentDetailPage() {
@@ -70,6 +93,19 @@ export default function StudentDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* Tab nav */}
+      <div className="flex gap-2 border-b pb-2">
+        <span className="text-sm font-semibold border-b-2 border-primary pb-1 pr-2">
+          Overview
+        </span>
+        <a
+          href={`/dashboard/students/${student.id}/speech`}
+          className="text-sm text-muted-foreground hover:text-foreground px-2 pb-1"
+        >
+          Speech Readings
+        </a>
+      </div>
+
       {/* Profile Card */}
       <Card>
         <CardHeader>
@@ -86,7 +122,7 @@ export default function StudentDetailPage() {
             </div>
             <div>
               <span className="text-muted-foreground">XP</span>
-              <p className="font-medium">{student.xp}</p>
+              <p className="font-medium">{student.xp.toLocaleString()}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Streak</span>
@@ -101,6 +137,32 @@ export default function StudentDetailPage() {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* XP & Level */}
+      <Card>
+        <CardHeader>
+          <CardTitle>XP &amp; Level</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <XpProgress xp={student.xp} />
+        </CardContent>
+      </Card>
+
+      {/* Badge Collection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Badges{" "}
+            <span className="text-sm font-normal text-muted-foreground">
+              ({data.badges.filter((b) => b.earned).length} /{" "}
+              {data.badges.length} earned)
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BadgeGrid badges={data.badges} />
         </CardContent>
       </Card>
 

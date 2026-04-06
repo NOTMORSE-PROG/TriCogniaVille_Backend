@@ -6,6 +6,7 @@ import { questAttemptSchema, formatZodError } from "@/lib/api/validators";
 import { internalError } from "@/lib/api/errors";
 import { eq, desc } from "drizzle-orm";
 import { TokenPayload } from "@/lib/auth/jwt";
+import { checkAndAwardBadges } from "@/lib/gamification/badges";
 
 export async function POST(request: NextRequest) {
   return withStudentAuth(request, async (req: NextRequest, user: TokenPayload) => {
@@ -24,6 +25,8 @@ export async function POST(request: NextRequest) {
           questId: parsed.data.questId,
           buildingId: parsed.data.buildingId,
           passed: parsed.data.passed,
+          score: parsed.data.score ?? null,
+          totalItems: parsed.data.totalItems ?? null,
           attempts: parsed.data.attempts,
           completedAt: parsed.data.completedAt
             ? new Date(parsed.data.completedAt)
@@ -31,7 +34,16 @@ export async function POST(request: NextRequest) {
         })
         .returning();
 
-      return NextResponse.json({ questAttempt: attempt }, { status: 201 });
+      // Await badge check so newly earned badges can be returned to the client.
+      const newBadges = await checkAndAwardBadges(user.sub).catch((err) => {
+        console.error("Badge check failed (quests):", err);
+        return [] as string[];
+      });
+
+      return NextResponse.json(
+        { questAttempt: attempt, badges: newBadges },
+        { status: 201 }
+      );
     } catch (error) {
       console.error("Record quest error:", error);
       return internalError();
