@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
             studentUpdates.readingLevel = data.readingLevel;
           if (data.onboardingDone !== undefined)
             studentUpdates.onboardingDone = data.onboardingDone;
+          if (data.tutorialDone !== undefined)
+            studentUpdates.tutorialDone = data.tutorialDone;
 
           await tx
             .update(students)

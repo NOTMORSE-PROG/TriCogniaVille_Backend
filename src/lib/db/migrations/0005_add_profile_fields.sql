@@ -1,0 +1,3 @@
+ALTER TABLE students ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS character_gender TEXT DEFAULT 'male';
+ALTER TABLE students ADD COLUMN IF NOT EXISTS tutorial_done BOOLEAN DEFAULT false;

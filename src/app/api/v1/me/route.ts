@@ -55,6 +55,12 @@ export async function PATCH(request: NextRequest) {
         updates.readingLevel = parsed.data.readingLevel;
       if (parsed.data.onboardingDone !== undefined)
         updates.onboardingDone = parsed.data.onboardingDone;
+      if (parsed.data.username !== undefined)
+        updates.username = parsed.data.username;
+      if (parsed.data.characterGender !== undefined)
+        updates.characterGender = parsed.data.characterGender;
+      if (parsed.data.tutorialDone !== undefined)
+        updates.tutorialDone = parsed.data.tutorialDone;
 
       const [updated] = await db
         .update(students)

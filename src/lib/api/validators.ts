@@ -45,6 +45,9 @@ export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
   readingLevel: z.number().int().min(1).max(4).optional(),
   onboardingDone: z.boolean().optional(),
+  username: z.string().min(2).max(50).trim().optional(),
+  characterGender: z.enum(["male", "female"]).optional(),
+  tutorialDone: z.boolean().optional(),
 });
 
 // ── Sync Validators ──
@@ -81,6 +84,7 @@ export const syncSchema = z.object({
   streakDays: z.number().int().min(0).optional(),
   readingLevel: z.number().int().min(1).max(4).optional(),
   onboardingDone: z.boolean().optional(),
+  tutorialDone: z.boolean().optional(),
 });
 
 // ── Class Validators ──

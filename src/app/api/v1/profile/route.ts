@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
             readingLevel: students.readingLevel,
             lastActive: students.lastActive,
             onboardingDone: students.onboardingDone,
+            username: students.username,
+            characterGender: students.characterGender,
+            tutorialDone: students.tutorialDone,
           })
           .from(students)
           .where(eq(students.id, user.sub))
@@ -70,6 +73,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         name: student.name,
         email: student.email,
+        username: student.username,
+        characterGender: student.characterGender,
+        tutorialDone: student.tutorialDone,
         xp: student.xp,
         streakDays: student.streakDays,
         readingLevel: student.readingLevel,
