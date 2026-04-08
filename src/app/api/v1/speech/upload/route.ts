@@ -22,8 +22,10 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Cloudinary treats audio as "video" resource type
-      const result = await cloudinary.uploader.upload(
+      // Cloudinary treats audio as "video" resource type. We race the upload
+      // against a 30s timeout so a stuck request doesn't hang the client
+      // (NetworkGate would already block the player on the front end).
+      const uploadPromise = cloudinary.uploader.upload(
         `data:audio/mp4;base64,${audio}`,
         {
           resource_type: "video",
@@ -31,12 +33,24 @@ export async function POST(request: NextRequest) {
           format: "m4a",
         }
       );
+      const result = await Promise.race([
+        uploadPromise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("UPLOAD_TIMEOUT")), 30_000)
+        ),
+      ]);
 
       return NextResponse.json(
         { audioUrl: result.secure_url },
         { status: 201 }
       );
     } catch (error) {
+      if (error instanceof Error && error.message === "UPLOAD_TIMEOUT") {
+        return NextResponse.json(
+          { error: "Audio upload timed out", code: "UPLOAD_TIMEOUT" },
+          { status: 408 }
+        );
+      }
       console.error("Upload audio error:", error);
       return internalError();
     }

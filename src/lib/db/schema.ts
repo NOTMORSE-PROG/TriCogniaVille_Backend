@@ -47,36 +47,13 @@ export const students = pgTable(
   ]
 );
 
-// ── Classes ──
-export const classes = pgTable("classes", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  teacherId: uuid("teacher_id")
-    .notNull()
-    .references(() => teachers.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  inviteCode: text("invite_code").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-// ── Class-Student Many-to-Many ──
-export const classStudents = pgTable(
-  "class_students",
-  {
-    classId: uuid("class_id")
-      .notNull()
-      .references(() => classes.id, { onDelete: "cascade" }),
-    studentId: uuid("student_id")
-      .notNull()
-      .references(() => students.id, { onDelete: "cascade" }),
-    joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [primaryKey({ columns: [table.classId, table.studentId] })]
-);
-
 // ── Quest Attempts ──
 export const questAttempts = pgTable("quest_attempts", {
   id: serial("id").primaryKey(),
+  // Client-generated UUID for idempotent retries. Unique constraint added in
+  // migration 0007 — `INSERT ... ON CONFLICT (attempt_id) DO NOTHING` lets the
+  // backend safely deduplicate retried POSTs without double-crediting XP.
+  attemptId: uuid("attempt_id").notNull().unique(),
   studentId: uuid("student_id")
     .notNull()
     .references(() => students.id, { onDelete: "cascade" }),
@@ -100,6 +77,7 @@ export const buildingStates = pgTable(
     buildingId: text("building_id").notNull(),
     unlocked: boolean("unlocked").default(false).notNull(),
     unlockedAt: timestamp("unlocked_at", { withTimezone: true }),
+    tutorialDone: boolean("tutorial_done").default(false).notNull(),
     syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [primaryKey({ columns: [table.studentId, table.buildingId] })]
@@ -195,36 +173,15 @@ export const speechAssessments = pgTable("speech_assessments", {
 
 // ── Relations ──
 export const teachersRelations = relations(teachers, ({ many }) => ({
-  classes: many(classes),
   reviewedAssessments: many(speechAssessments),
 }));
 
 export const studentsRelations = relations(students, ({ many }) => ({
-  classStudents: many(classStudents),
   questAttempts: many(questAttempts),
   buildingStates: many(buildingStates),
   storyProgress: many(storyProgress),
   speechAssessments: many(speechAssessments),
   studentBadges: many(studentBadges),
-}));
-
-export const classesRelations = relations(classes, ({ one, many }) => ({
-  teacher: one(teachers, {
-    fields: [classes.teacherId],
-    references: [teachers.id],
-  }),
-  classStudents: many(classStudents),
-}));
-
-export const classStudentsRelations = relations(classStudents, ({ one }) => ({
-  class: one(classes, {
-    fields: [classStudents.classId],
-    references: [classes.id],
-  }),
-  student: one(students, {
-    fields: [classStudents.studentId],
-    references: [students.id],
-  }),
 }));
 
 export const questAttemptsRelations = relations(questAttempts, ({ one }) => ({

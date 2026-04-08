@@ -19,7 +19,10 @@ export async function signToken(payload: {
   role: "student" | "teacher";
   email: string;
 }): Promise<string> {
-  const expiresIn = payload.role === "student" ? "7d" : "24h";
+  // Students get a 30-day token: there is no refresh-token endpoint, and the
+  // client has no offline fallback after the SQLite removal, so a mid-session
+  // expiry would be a hard re-login. 30d gives us a comfortable session window.
+  const expiresIn = payload.role === "student" ? "30d" : "24h";
 
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })

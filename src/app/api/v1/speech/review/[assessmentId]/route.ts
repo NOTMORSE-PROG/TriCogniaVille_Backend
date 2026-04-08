@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { speechAssessments, classStudents, classes } from "@/lib/db/schema";
+import { speechAssessments } from "@/lib/db/schema";
 import { withTeacherAuth } from "@/lib/auth/middleware";
 import { speechReviewSchema, formatZodError } from "@/lib/api/validators";
 import { notFound, internalError } from "@/lib/api/errors";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { TokenPayload } from "@/lib/auth/jwt";
 
 /**
- * Returns the assessment row if and only if it belongs to a student in one of
- * the teacher's classes. Otherwise returns null.
+ * Returns the assessment row if it exists. TriCognia is single-org so any
+ * authenticated teacher can view any assessment — no class scoping.
  */
-async function findAssessmentForTeacher(id: number, teacherId: string) {
+async function findAssessmentForTeacher(id: number, _teacherId: string) {
   const [row] = await db
-    .select({ assessment: speechAssessments })
+    .select()
     .from(speechAssessments)
-    .innerJoin(
-      classStudents,
-      eq(classStudents.studentId, speechAssessments.studentId)
-    )
-    .innerJoin(classes, eq(classes.id, classStudents.classId))
-    .where(and(eq(speechAssessments.id, id), eq(classes.teacherId, teacherId)))
+    .where(eq(speechAssessments.id, id))
     .limit(1);
-  return row?.assessment ?? null;
+  return row ?? null;
 }
 
 export async function GET(

@@ -7,7 +7,7 @@ const LOCKOUT_WINDOW_MINUTES = 15;
 
 export async function checkRateLimit(
   email: string,
-  _ipAddress: string | null // eslint-disable-line @typescript-eslint/no-unused-vars
+  _ipAddress: string | null
 ): Promise<{ allowed: boolean; retryAfterMinutes?: number }> {
   const windowStart = new Date(
     Date.now() - LOCKOUT_WINDOW_MINUTES * 60 * 1000

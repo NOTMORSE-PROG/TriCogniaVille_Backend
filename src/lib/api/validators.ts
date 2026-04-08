@@ -50,51 +50,34 @@ export const updateProfileSchema = z.object({
   tutorialDone: z.boolean().optional(),
 });
 
-// ── Sync Validators ──
+// ── Quest / Story / Onboarding Validators ──
 
+/**
+ * Quest attempt body. The client generates `attemptId` (UUID v4) once per
+ * quest run and reuses it on retries — backend uses this for idempotency.
+ * `passed` is intentionally NOT accepted; the server recomputes it from
+ * (buildingId, score, totalItems) using `quest-config.ts`.
+ */
 export const questAttemptSchema = z.object({
+  attemptId: z.string().uuid(),
   questId: z.string().min(1).max(100),
   buildingId: z.string().min(1).max(100),
-  passed: z.boolean(),
-  score: z.number().int().min(0).max(100).optional(),
-  totalItems: z.number().int().min(0).optional(),
+  score: z.number().int().min(0).max(100),
+  totalItems: z.number().int().min(0).max(100),
   attempts: z.number().int().min(1).max(100).default(1),
   completedAt: z.string().datetime().optional(),
 });
 
-export const buildingStateSchema = z.object({
-  buildingId: z.string().min(1).max(100),
-  unlocked: z.boolean(),
-  unlockedAt: z.string().datetime().optional(),
+export const storyProgressSingleSchema = z.object({
+  // Empty string is valid — prologue/ending flags are "global" (no building).
+  buildingId: z.string().max(50),
+  flag: z.enum(["prologueSeen", "introSeen", "outroSeen", "endingSeen"]),
 });
 
-export const storyProgressItemSchema = z.object({
-  buildingId: z.string().min(1).max(50),
-  prologueSeen: z.boolean().default(false),
-  introSeen: z.boolean().default(false),
-  outroSeen: z.boolean().default(false),
-  endingSeen: z.boolean().default(false),
-});
-
-export const syncSchema = z.object({
-  questAttempts: z.array(questAttemptSchema).max(100).default([]),
-  buildingStates: z.array(buildingStateSchema).max(50).default([]),
-  storyProgress: z.array(storyProgressItemSchema).max(50).default([]),
-  xp: z.number().int().min(0).optional(),
-  streakDays: z.number().int().min(0).optional(),
-  readingLevel: z.number().int().min(1).max(4).optional(),
-  onboardingDone: z.boolean().optional(),
-  tutorialDone: z.boolean().optional(),
-});
-
-// ── Class Validators ──
-
-export const createClassSchema = z.object({
-  name: z.string().min(1, "Class name is required").max(100).trim(),
-});
-
-export const joinClassSchema = z.object({
-  inviteCode: z.string().min(1, "Invite code is required").max(20).trim(),
+export const onboardingCompleteSchema = z.object({
+  username: z.string().min(1).max(40).trim(),
+  characterGender: z.enum(["male", "female"]),
+  readingLevel: z.number().int().min(1).max(4),
 });
 
 // ── Speech Validators ──

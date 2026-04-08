@@ -1,40 +1,30 @@
 import { db } from "@/lib/db";
-import { classes, classStudents } from "@/lib/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { students } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 /**
- * Returns true if the given teacher owns at least one class the student is enrolled in.
- * Used to gate teacher dashboard access so a teacher cannot read data for students
- * outside their own roster.
+ * Returns true if the given student exists. TriCognia Ville is a single-org
+ * product without classroom features, so every authenticated teacher sees
+ * every student. The function signature is preserved so call sites in the
+ * dashboard routes don't need to change.
  */
 export async function teacherOwnsStudent(
-  teacherId: string,
+  _teacherId: string,
   studentId: string
 ): Promise<boolean> {
   const [row] = await db
-    .select({ classId: classStudents.classId })
-    .from(classStudents)
-    .innerJoin(classes, eq(classStudents.classId, classes.id))
-    .where(
-      and(
-        eq(classStudents.studentId, studentId),
-        eq(classes.teacherId, teacherId)
-      )
-    )
+    .select({ id: students.id })
+    .from(students)
+    .where(eq(students.id, studentId))
     .limit(1);
   return !!row;
 }
 
 /**
- * Drizzle subquery that yields every studentId enrolled in any class owned by
- * this teacher. Use inside `inArray(students.id, visibleStudentIds(teacherId))`
- * to scope SELECT queries to the teacher's roster only.
+ * Drizzle subquery yielding every studentId in the system. Single-org
+ * product, so this is just `SELECT id FROM students`. Use inside
+ * `inArray(students.id, visibleStudentIds(teacherId))`.
  */
-export function visibleStudentIds(teacherId: string) {
-  return sql`(
-    SELECT ${classStudents.studentId}
-    FROM ${classStudents}
-    INNER JOIN ${classes} ON ${classStudents.classId} = ${classes.id}
-    WHERE ${classes.teacherId} = ${teacherId}
-  )`;
+export function visibleStudentIds(_teacherId: string) {
+  return sql`(SELECT ${students.id} FROM ${students})`;
 }
