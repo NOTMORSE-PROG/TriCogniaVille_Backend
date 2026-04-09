@@ -202,15 +202,15 @@ export default function AnalyticsPage() {
               {data.streakLeaderboard.map((s, i) => (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between py-2 px-3 rounded border"
+                  className="flex items-center justify-between py-2 px-3 rounded border gap-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-muted-foreground text-sm w-6 font-bold">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-muted-foreground text-sm w-6 font-bold shrink-0">
                       #{i + 1}
                     </span>
-                    <span className="font-medium">{s.name}</span>
+                    <span className="font-medium truncate">{s.name}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Badge variant="secondary">{s.streakDays}d</Badge>
                     <Badge variant="outline">{s.xp} XP</Badge>
                   </div>

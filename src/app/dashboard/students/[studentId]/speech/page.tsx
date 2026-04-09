@@ -219,6 +219,7 @@ export default function StudentSpeechPage() {
               No speech readings recorded yet.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -321,6 +322,7 @@ export default function StudentSpeechPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

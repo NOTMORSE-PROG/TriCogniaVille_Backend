@@ -150,15 +150,15 @@ export default function DashboardOverview() {
                   <Link
                     key={s.id}
                     href={`/dashboard/students/${s.id}`}
-                    className="flex items-center justify-between py-2 px-3 rounded hover:bg-muted transition-colors"
+                    className="flex items-center justify-between py-2 px-3 rounded hover:bg-muted transition-colors gap-2"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-muted-foreground text-sm w-6">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-muted-foreground text-sm w-6 shrink-0">
                         #{i + 1}
                       </span>
-                      <span className="font-medium">{s.name}</span>
+                      <span className="font-medium truncate">{s.name}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Badge variant="secondary">{s.streakDays}d streak</Badge>
                       <Badge variant="outline">{s.xp} XP</Badge>
                     </div>
@@ -182,15 +182,15 @@ export default function DashboardOverview() {
                 {data.recentActivity.map((a, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between py-2 px-3 rounded border"
+                    className="flex items-center justify-between py-2 px-3 rounded border gap-2"
                   >
-                    <div>
-                      <span className="font-medium">{a.studentName}</span>
-                      <span className="text-muted-foreground text-sm ml-2">
+                    <div className="min-w-0">
+                      <span className="font-medium truncate block">{a.studentName}</span>
+                      <span className="text-muted-foreground text-xs truncate block">
                         {a.buildingId} / {a.questId}
                       </span>
                     </div>
-                    <Badge variant={a.passed ? "default" : "destructive"}>
+                    <Badge variant={a.passed ? "default" : "destructive"} className="shrink-0">
                       {a.passed ? "Passed" : "Failed"}
                     </Badge>
                   </div>

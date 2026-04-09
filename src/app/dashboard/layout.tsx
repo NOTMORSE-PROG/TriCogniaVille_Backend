@@ -13,7 +13,7 @@ export default function DashboardLayout({
         <div className="flex items-center gap-2 border-b px-4 py-3">
           <SidebarTrigger />
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </main>
     </SidebarProvider>
   );

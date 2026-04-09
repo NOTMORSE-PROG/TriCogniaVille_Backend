@@ -215,6 +215,7 @@ export default function StudentDetailPage() {
               No quest attempts yet.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -247,6 +248,7 @@ export default function StudentDetailPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
