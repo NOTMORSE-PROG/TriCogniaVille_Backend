@@ -10,6 +10,8 @@
 export type BuildingId =
   | "town_hall"
   | "school"
+  | "inn"
+  | "chapel"
   | "library"
   | "well"
   | "market"
@@ -30,6 +32,8 @@ export interface QuestConfig {
 export const UNLOCK_ORDER: BuildingId[] = [
   "town_hall",
   "school",
+  "inn",
+  "chapel",
   "library",
   "well",
   "market",
@@ -39,6 +43,8 @@ export const UNLOCK_ORDER: BuildingId[] = [
 export const QUEST_CONFIG: Record<BuildingId, QuestConfig> = {
   town_hall: { questId: "week1_decoding", xpReward: 100, passThreshold: 7 },
   school: { questId: "week2_syllabication", xpReward: 120, passThreshold: 7 },
+  inn: { questId: "week3_punctuation", xpReward: 130, passThreshold: 7 },
+  chapel: { questId: "week4_fluency", xpReward: 140, passThreshold: 7 },
   library: { questId: "week5_vocabulary", xpReward: 150, passThreshold: 7 },
   well: { questId: "week6_main_idea", xpReward: 160, passThreshold: 7 },
   market: { questId: "week7_inference", xpReward: 170, passThreshold: 7 },
