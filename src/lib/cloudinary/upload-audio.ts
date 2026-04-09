@@ -14,11 +14,11 @@ export async function uploadAudioToCloudinary(
   base64Audio: string
 ): Promise<string> {
   const uploadPromise = cloudinary.uploader.upload(
-    `data:audio/mp4;base64,${base64Audio}`,
+    `data:audio/mpeg;base64,${base64Audio}`,
     {
       resource_type: "video",
       folder: "tricognia/speech",
-      format: "m4a",
+      format: "mp3",
     }
   );
 
@@ -30,4 +30,24 @@ export async function uploadAudioToCloudinary(
   ]);
 
   return result.secure_url;
+}
+
+/**
+ * Delete an audio file from Cloudinary by its URL.
+ * Extracts the public_id from the URL and calls destroy().
+ * Safe to call with old M4A URLs — handles both formats.
+ */
+export async function deleteAudioFromCloudinary(
+  audioUrl: string
+): Promise<void> {
+  // Match public_id: "tricognia/speech/<id>" (no extension, no version)
+  const match = audioUrl.match(/\/tricognia\/speech\/([^./]+)/);
+  if (!match) return;
+  const publicId = `tricognia/speech/${match[1]}`;
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+  } catch {
+    // Best-effort — log but don't throw
+    console.warn(`[Cloudinary] Failed to delete ${publicId}`);
+  }
 }

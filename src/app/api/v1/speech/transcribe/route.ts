@@ -75,6 +75,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      if (!transcription) {
+        return NextResponse.json(
+          { error: "Transcription service unavailable. No API keys configured." },
+          { status: 503 }
+        );
+      }
+
       // Confidence from segment avg_logprob
       const segments: WhisperSegment[] = transcription.segments ?? [];
       const avgLogprob =
