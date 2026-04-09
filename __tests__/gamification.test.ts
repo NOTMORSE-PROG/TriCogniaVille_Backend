@@ -8,7 +8,6 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readingLevelFromXp } from "../src/lib/gamification/reading-level";
 import { nextStreak } from "../src/lib/gamification/streak";
 import {
   QUEST_CONFIG,
@@ -16,17 +15,6 @@ import {
   isSequenceSatisfied,
   recomputePass,
 } from "../src/lib/quests/quest-config";
-
-test("readingLevelFromXp matches Godot thresholds", () => {
-  assert.equal(readingLevelFromXp(0), 1);
-  assert.equal(readingLevelFromXp(99), 1);
-  assert.equal(readingLevelFromXp(100), 2);
-  assert.equal(readingLevelFromXp(249), 2);
-  assert.equal(readingLevelFromXp(250), 3);
-  assert.equal(readingLevelFromXp(499), 3);
-  assert.equal(readingLevelFromXp(500), 4);
-  assert.equal(readingLevelFromXp(99999), 4);
-});
 
 test("nextStreak: same day is no-op", () => {
   const now = new Date();

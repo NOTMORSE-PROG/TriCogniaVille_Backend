@@ -15,7 +15,6 @@ import {
   recomputePass,
   type BuildingId,
 } from "@/lib/quests/quest-config";
-import { readingLevelFromXp } from "@/lib/gamification/reading-level";
 import { nextStreak } from "@/lib/gamification/streak";
 
 /**
@@ -169,8 +168,6 @@ export async function POST(request: NextRequest) {
         // 5. Compute deltas.
         const xpDelta = isReplay ? REPLAY_XP_REWARD : cfg.xpReward;
         const newXp = studentBefore.xp + xpDelta;
-        const oldReadingLevel = studentBefore.readingLevel;
-        const newReadingLevel = readingLevelFromXp(newXp);
         const newStreakValue = nextStreak(
           studentBefore.lastActive,
           studentBefore.streakDays
@@ -182,7 +179,6 @@ export async function POST(request: NextRequest) {
           .update(students)
           .set({
             xp: newXp,
-            readingLevel: newReadingLevel,
             streakDays: newStreakValue,
             lastActive: now,
             updatedAt: now,
@@ -209,15 +205,10 @@ export async function POST(request: NextRequest) {
           unlockedBuilding = { buildingId, unlockedAt: now };
         }
 
-        const levelUp =
-          newReadingLevel > oldReadingLevel
-            ? { from: oldReadingLevel, to: newReadingLevel }
-            : null;
-
         return {
           questAttempt: attempt,
           unlockedBuilding,
-          levelUp,
+          levelUp: null,
           student: studentAfter,
           idempotentReplay: false,
           sequenceViolation: false,
