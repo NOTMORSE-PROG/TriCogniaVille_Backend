@@ -20,6 +20,8 @@ export type BuildingId =
 export interface QuestConfig {
   questId: string;
   xpReward: number;
+  /** XP awarded for a perfect score (all items correct, or 100% weighted). */
+  xpRewardPerfect: number;
   passThreshold: number;
   /** Bakery only — weighted final assessment. */
   assessment?: {
@@ -41,16 +43,17 @@ export const UNLOCK_ORDER: BuildingId[] = [
 ];
 
 export const QUEST_CONFIG: Record<BuildingId, QuestConfig> = {
-  town_hall: { questId: "week1_decoding", xpReward: 100, passThreshold: 7 },
-  school: { questId: "week2_syllabication", xpReward: 120, passThreshold: 7 },
-  inn: { questId: "week3_punctuation", xpReward: 130, passThreshold: 7 },
-  chapel: { questId: "week4_fluency", xpReward: 140, passThreshold: 7 },
-  library: { questId: "week5_vocabulary", xpReward: 150, passThreshold: 7 },
-  well: { questId: "week6_main_idea", xpReward: 160, passThreshold: 7 },
-  market: { questId: "week7_inference", xpReward: 170, passThreshold: 7 },
+  town_hall: { questId: "week1_decoding", xpReward: 100, xpRewardPerfect: 125, passThreshold: 7 },
+  school: { questId: "week2_syllabication", xpReward: 120, xpRewardPerfect: 145, passThreshold: 7 },
+  inn: { questId: "week3_punctuation", xpReward: 130, xpRewardPerfect: 155, passThreshold: 7 },
+  chapel: { questId: "week4_fluency", xpReward: 140, xpRewardPerfect: 165, passThreshold: 7 },
+  library: { questId: "week5_vocabulary", xpReward: 150, xpRewardPerfect: 175, passThreshold: 7 },
+  well: { questId: "week6_main_idea", xpReward: 160, xpRewardPerfect: 185, passThreshold: 7 },
+  market: { questId: "week7_inference", xpReward: 170, xpRewardPerfect: 195, passThreshold: 7 },
   bakery: {
     questId: "week8_final_mission",
     xpReward: 200,
+    xpRewardPerfect: 225,
     passThreshold: 18,
     assessment: {
       weights: { decoding: 30, fluency: 30, comprehension: 40 },
@@ -86,6 +89,24 @@ export function recomputePass(
 
 export function isValidBuildingId(id: string): id is BuildingId {
   return id in QUEST_CONFIG;
+}
+
+/**
+ * Compute the XP delta for a quest attempt.
+ * - Replay of an already-unlocked building: 0 XP.
+ * - Perfect score (score == totalItems for standard; score == 100 for bakery): xpRewardPerfect.
+ * - Otherwise (pass but not perfect): xpReward.
+ */
+export function computeXpDelta(
+  buildingId: BuildingId,
+  score: number,
+  totalItems: number,
+  isReplay: boolean
+): number {
+  if (isReplay) return REPLAY_XP_REWARD;
+  const cfg = QUEST_CONFIG[buildingId];
+  const isPerfect = cfg.assessment ? score === 100 : score === totalItems;
+  return isPerfect ? cfg.xpRewardPerfect : cfg.xpReward;
 }
 
 /** Returns true if every prior building in UNLOCK_ORDER is in `unlocked`. */

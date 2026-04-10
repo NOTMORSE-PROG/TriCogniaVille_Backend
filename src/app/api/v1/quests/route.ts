@@ -9,10 +9,10 @@ import { TokenPayload } from "@/lib/auth/jwt";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
 import {
   QUEST_CONFIG,
-  REPLAY_XP_REWARD,
   isValidBuildingId,
   isSequenceSatisfied,
   recomputePass,
+  computeXpDelta,
   type BuildingId,
 } from "@/lib/quests/quest-config";
 import { nextStreak } from "@/lib/gamification/streak";
@@ -165,8 +165,8 @@ export async function POST(request: NextRequest) {
           throw new SequenceViolationError();
         }
 
-        // 5. Compute deltas.
-        const xpDelta = isReplay ? REPLAY_XP_REWARD : cfg.xpReward;
+        // 5. Compute deltas (pass = base XP, perfect = base + 25 bonus).
+        const xpDelta = computeXpDelta(buildingId, data.score, data.totalItems, isReplay);
         const newXp = studentBefore.xp + xpDelta;
         const newStreakValue = nextStreak(
           studentBefore.lastActive,
