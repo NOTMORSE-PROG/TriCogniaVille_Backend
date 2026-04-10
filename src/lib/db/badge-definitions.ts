@@ -211,7 +211,7 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   },
   {
     id: "level_3",
-    name: "Fluent Reader",
+    name: "Advanced Reader",
     description: "Reach Reading Level 3",
     category: "level",
     icon: "📗",

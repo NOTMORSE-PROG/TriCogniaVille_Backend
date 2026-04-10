@@ -107,7 +107,7 @@ export default function AnalyticsPage() {
             <p className="text-muted-foreground">No data yet.</p>
           ) : (
             <div className="space-y-3">
-              {[1, 2, 3, 4].map((level) => {
+              {[1, 2, 3].map((level) => {
                 const item = data.readingLevelDistribution.find(
                   (d) => d.level === level
                 );
@@ -119,7 +119,6 @@ export default function AnalyticsPage() {
                 const labels = [
                   "Non-Reader",
                   "Emerging",
-                  "Developing",
                   "Independent",
                 ];
                 return (
